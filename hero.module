@@ -1,0 +1,219 @@
+<?php
+
+/*
+* igasi
+*/
+
+
+/*
+* Function for funcionality contiditional event by capacity
+*/
+
+//Update when insert node registration in avalability schedule
+function ero_action_insert_registration($nid=NULL)
+{
+	//get parent
+	$reference_field = "time_of_audit_";
+	$parent_nid = _ero_er_getparent($reference_field,$nid);
+	
+	//get field value capacity avalability schedule
+	$field = "reserved";
+	$reserved = _get_field_value($field,$parent_nid);
+	
+	
+	//update avalability schedule
+	$reserved ++;
+	$result['update'] = _ero_field_dbupdate($field,$reserved,$parent_nid);
+	cache_clear_all('field:node:' . $parent_nid, 'cache_field');
+	
+	$result = array(
+		'reserved' => $reserved,
+		'nid' => $nid,
+		'parent_nid' => $parent_nid,
+		);
+	return array('insert_registration' => $result);	
+
+}
+
+//Update when delete node registration in avalability schedule
+function ero_action_delete_registration($nid=NULL)
+{
+	//get parent
+	$reference_field = "time_of_audit_";
+	$parent_nid = _ero_er_getparent($reference_field,$nid);
+	
+	//get field value capacity avalability schedule
+	$field = "reserved";
+	$reserved = _get_field_value($field,$parent_nid);
+	
+	
+	//update avalability schedule
+	$reserved --;
+	$result = _ero_field_dbupdate($field,$reserved,$parent_nid);
+	cache_clear_all('field:node:' . $parent_nid, 'cache_field');
+
+	$result = array(
+                'reserved' => $reserved,
+                'nid' => $nid,
+                'parent_nid' => $parent_nid,
+                );
+	
+	return array('delete_registration' => $result);	
+}
+
+
+/*
+* Auxiliar Functions Active Record for fields
+*/
+
+//implements db_insert
+function _ero_field_dbinsert($bundle=NULL,$field=NULL,$value=NULL,$nid=NULL)
+{
+	return db_insert('field_data_field_'.$campo)
+			->fields(array('entity_type'=>'node',
+							'bundle'=>$bundle,
+							'deleted'=>0,
+							'entity_id'=>$nid,
+							'revision_id'=>$nid,
+							'language'=>'und',
+							'delta'=>0,
+							'field_'.$field.'_value'=>$value,
+			))
+			->execute();
+}
+
+//implements db_delete
+function _ero_field_dbdelete($field=NULL,$nid=NULL){
+	return db_delete('field_data_field_'.$field)
+			->condition('entity_id',$nid, '=')
+			->execute();
+}
+
+//implements db_update
+function _ero_field_dbupdate($field=NULL,$value=NULL,$nid=NULL){
+	return db_update('field_data_field_'.$field)
+			->fields(array('field_'.$field.'_value' => $value))
+			->condition('entity_id',$nid,'=')
+			->execute();
+}
+
+//implements db_query
+function _get_field_value($field=NULL,$nid=NULL){
+	return db_query("SELECT field_".$field."_value 
+					FROM {field_data_field_".$field."} 
+					WHERE entity_id=:nid", 
+					array(':nid'=>$nid) )-> fetchField();
+}
+
+
+/*
+* Auxiliar function for count childs
+*/
+
+function _ero_er_count_childs_($reference_field=NULL,$nid=NULL){
+	$count = 0;
+
+	foreach (_ero_er_getallchilds($reference_field,$nid) as $child_nid) {
+		$count ++;
+	}
+
+	return $count;
+}
+
+
+/*
+* functions for get parents and childs
+*/
+
+function _ero_er_getparent($reference_field=NULL,$nid=NULL){
+	return db_query("SELECT field_".$reference_field."_target_id 
+			FROM {field_data_field_".$reference_field."} 
+			WHERE entity_id=:nid", 
+			array(':nid'=>$nid) )-> fetchField();
+}
+
+function _ero_er_getallparents($reference_field=NULL,$nid=NULL){
+	return db_query("SELECT entity_id 
+			FROM {field_data_field_".$reference_field."} 
+			WHERE field_".$referencia."_target_id=:nid", 
+			array(':nid'=>$nid) );
+}
+
+function _ero_er_getchild($reference_field=NULL,$nid=NULL){
+	return db_query("SELECT entity_id 
+			FROM {field_data_field_".$reference_field."} 
+			WHERE field_".$referencia."_target_id=:nid", 
+			array(':nid'=>$nid) )-> fetchField();
+}
+
+function _ero_er_getallchilds($reference_field=NULL,$nid=NULL){
+	return db_query("SELECT entity_id 
+			FROM {field_data_field_".$reference_field."} 
+			WHERE field_".$referencia."_nid=:nid", 
+			array(':nid'=>$nid) );
+}
+
+
+
+/*
+* Implements active record Drupal 7 
+*/
+
+/*
+*Implements db_insert() for entity reference
+*  $er_id = entity reference id
+*/
+
+function _ero_er_dbinsert($bundle=NULL,$field=NULL,$er_id=NULL,$nid=NULL)
+{
+	$result = db_insert('field_data_field_'.$campo)
+        	  ->fields(array('entity_type'=>'node',
+                	         'bundle'=>$bundle,
+                        	 'deleted'=>0,
+                        	 'entity_id'=>$nid,
+	                         'revision_id'=>$nid,
+        	                 'language'=>'und',
+                	         'delta'=>0,
+                        	 'field_'.$field.'_target_id'=>$er_id,
+	          ))
+        	  ->execute();
+
+	cache_clear_all('field:node:' . $nid, 'cache_field');
+	return $result;
+}
+
+/*
+* Implements db_update for entity reference
+*/
+
+function _ero_er_dbupdate($field=NULL,$value=NULL,$nid=NULL)
+{
+	return db_update('field_data_field_'.$field)
+	          ->fields(array('field_'.$field.'_target_id' => $value))
+        	  ->condition('entity_id',$nid,'=')
+	          ->execute();
+}
+
+/*
+* Implements db_delete for entity reference
+*/
+
+function _ero_er_dbdelete($field=NULL,$nid=NULL)
+{
+	return db_delete('field_data_field_'.$field)
+	          ->condition('entity_id',$nid, '=')
+        	  ->execute();
+}
+
+/*
+* Implements db_queryt for entity reference
+*/
+
+function _ero_er_dbselect($field=NULL, $nid=NULL)
+{
+	return db_query("SELECT field_".$field."_target_id 
+			FROM {field_data_field_".$field."} 
+			WHERE entity_id=:nid", 
+			array(':nid'=>$nid) )-> fetchField();
+
+}

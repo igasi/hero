@@ -1,0 +1,17 @@
+name = Entity reference aritmetic operations 
+description = Processes arithmetic operation between relationships fields nodes with entityreference
+
+package = Emprendor Core
+core = 7.x
+
+files[] = cec_custom.rules.inc
+
+dependencies[] = rules
+dependencies[] = entityreference
+
+; Module custom for Emprendor Core
+
+version = "7.x-1.x-dev"
+core = "7.x"
+project = "Emprendor Core"
+
