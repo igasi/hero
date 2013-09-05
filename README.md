@@ -1,4 +1,4 @@
-hero1.0
+hero1.0-dev
 =======
 
 Hierarchy with Entity Reference Operations, is a Drupal 7 custom module. 
